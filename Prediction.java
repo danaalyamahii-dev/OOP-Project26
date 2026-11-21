@@ -1,4 +1,4 @@
-package gpu.logic;
+package logic;
 
 public class Prediction {
     private String jobId;
