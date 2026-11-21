@@ -1,4 +1,4 @@
-package gpu.logic;
+package logic;
 
 import gpu.model.ProjectException;
 
