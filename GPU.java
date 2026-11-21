@@ -1,4 +1,4 @@
-package gpu.model;
+package model;
 
 public class GPU {
     private int id;
