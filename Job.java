@@ -1,4 +1,4 @@
-package gpu.model;
+package model;
 
 public class Job {
     public static final String QUEUED = "Queued";
