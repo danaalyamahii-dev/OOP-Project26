@@ -7,7 +7,7 @@ public class Prediction {
     private long start;
     private long finish;
     private long waitMinutes;
-
+    
     public Prediction(String jobId, int position, int gpuId, long start, long finish, long waitMinutes) {
         this.jobId = jobId;
         this.position = position;
