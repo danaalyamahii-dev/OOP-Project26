@@ -46,24 +46,18 @@ public class DataStore {
 
     private void saveClock(AppState state) throws ProjectException {
         File file = new File(dataDir, "clock.csv");
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter(file);
+        try (PrintWriter out = new PrintWriter(file)) {
             out.println("initial,now,nextJobNumber");
             SimulationClock clock = state.getClock();
             out.println(clock.getInitial() + "," + clock.getNow() + "," + state.getNextJobNumber());
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
-        } finally {
-            if (out != null) { out.close(); }
         }
     }
 
     private void saveStudents(AppState state) throws ProjectException {
         File file = new File(dataDir, "students.csv");
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter(file);
+        try (PrintWriter out = new PrintWriter(file)) {
             out.println("username,password,name,email,phone,allocated,used,reserved");
             for (Student s : state.getStudents()) {
                 TimeAllowance a = s.getAllowance();
@@ -78,16 +72,12 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
-        } finally {
-            if (out != null) { out.close(); }
         }
     }
 
     private void saveRequests(AppState state) throws ProjectException {
         File file = new File(dataDir, "requests.csv");
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter(file);
+        try (PrintWriter out = new PrintWriter(file)) {
             out.println("id,name,email,phone,password,status");
             for (AccessRequest r : state.getRequests()) {
                 out.println(escape(r.getId()) + "," +
@@ -99,16 +89,12 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
-        } finally {
-            if (out != null) { out.close(); }
         }
     }
 
     private void saveJobs(AppState state) throws ProjectException {
         File file = new File(dataDir, "jobs.csv");
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter(file);
+        try (PrintWriter out = new PrintWriter(file)) {
             out.println("number,studentId,title,application,description,duration,submissionTime,status,gpuId,startTime,finishTime,cancellationTime,cancelledBy,cancellationReason");
             for (Job j : state.getJobs()) {
                 out.println(j.getNumber() + "," +
@@ -128,16 +114,12 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
-        } finally {
-            if (out != null) { out.close(); }
         }
     }
 
     private void saveGrants(AppState state) throws ProjectException {
         File file = new File(dataDir, "grants.csv");
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter(file);
+        try (PrintWriter out = new PrintWriter(file)) {
             out.println("entry");
             for (TimeGrant grant : state.getGrants()) {
                 out.println(escape(grant.getStudentId()) + "," + grant.getMinutes() + "," +
@@ -145,8 +127,6 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
-        } finally {
-            if (out != null) { out.close(); }
         }
     }
 
@@ -167,9 +147,7 @@ public class DataStore {
     private void loadClock(AppState state) throws ProjectException {
         File file = new File(dataDir, "clock.csv");
         if (!file.exists()) { return; }
-        Scanner br = null;
-        try {
-            br = new Scanner(file);
+        try (Scanner br = new Scanner(file)) {
             if (!br.hasNextLine()) { return; }
             br.nextLine();
             if (!br.hasNextLine()) { return; }
@@ -188,17 +166,13 @@ public class DataStore {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (line 2: " + e.getMessage() + ").");
-        } finally {
-            if (br != null) { br.close(); }
         }
     }
 
     private void loadStudents(AppState state) throws ProjectException {
         File file = new File(dataDir, "students.csv");
         if (!file.exists()) { return; }
-        Scanner br = null;
-        try {
-            br = new Scanner(file);
+        try (Scanner br = new Scanner(file)) {
             if (br.hasNextLine()) { br.nextLine(); }
             String line;
             int lineNum = 1;
@@ -228,17 +202,13 @@ public class DataStore {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
-        } finally {
-            if (br != null) { br.close(); }
         }
     }
 
     private void loadRequests(AppState state) throws ProjectException {
         File file = new File(dataDir, "requests.csv");
         if (!file.exists()) { return; }
-        Scanner br = null;
-        try {
-            br = new Scanner(file);
+        try (Scanner br = new Scanner(file)) {
             if (br.hasNextLine()) { br.nextLine(); }
             String line;
             int lineNum = 1;
@@ -264,8 +234,6 @@ public class DataStore {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
-        } finally {
-            if (br != null) { br.close(); }
         }
     }
 
@@ -273,9 +241,7 @@ public class DataStore {
         File file = new File(dataDir, "jobs.csv");
         if (!file.exists()) { return; }
         Job[] runningOnGpu = new Job[4];
-        Scanner br = null;
-        try {
-            br = new Scanner(file);
+        try (Scanner br = new Scanner(file)) {
             if (br.hasNextLine()) { br.nextLine(); }
             String line;
             int lineNum = 1;
@@ -327,17 +293,13 @@ public class DataStore {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
-        } finally {
-            if (br != null) { br.close(); }
         }
     }
 
     private void loadGrants(AppState state) throws ProjectException {
         File file = new File(dataDir, "grants.csv");
         if (!file.exists()) { return; }
-        Scanner br = null;
-        try {
-            br = new Scanner(file);
+        try (Scanner br = new Scanner(file)) {
             if (br.hasNextLine()) { br.nextLine(); }
             String line;
             while (br.hasNextLine()) {
@@ -352,8 +314,6 @@ public class DataStore {
             }
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
-        } finally {
-            if (br != null) { br.close(); }
         }
     }
 }
