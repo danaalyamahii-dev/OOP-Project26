@@ -1,6 +1,7 @@
 package gpu.model;
 
 import java.util.ArrayList;
+import gpu.logic.SimulationClock;
 
 public class AppState {
     private SimulationClock clock;
@@ -51,45 +52,22 @@ public class AppState {
         }
     }
 
-public void addStudent(Student student) {
-    students.add(student);
-}
-
-public void addRequest(AccessRequest request) {
-    requests.add(request);
-}
-
-public Student findStudent(String id) {
-    for (Student student : students) {
-        if (student.getUsername().equals(id)) {
-            return student;
+    public void addStudent(Student student) { students.add(student); }
+    public void addRequest(AccessRequest request) { requests.add(request); }
+    public Student findStudent(String id) {
+        for (Student student : students) {
+            if (student.getUsername().equals(id)) return student;
         }
+        return null;
     }
-    return null;
-}
-
-public AccessRequest findRequest(String id) {
-    for (AccessRequest request : requests) {
-        if (request.getId().equals(id)) {
-            return request;
+    public AccessRequest findRequest(String id) {
+        for (AccessRequest request : requests) {
+            if (request.getId().equals(id)) return request;
         }
+        return null;
     }
-    return null;
+    private ArrayList<TimeGrant> grants = new ArrayList<TimeGrant>();
+    public void addGrant(TimeGrant grant) { grants.add(grant); }
+    public ArrayList<TimeGrant> getGrants() { return grants; }
+    public void addTimeGrantLog(String logEntry) { timeGrantLogs.add(logEntry); }
 }
-
-private ArrayList<TimeGrant> grants = new ArrayList<TimeGrant>();
-
-public void addGrant(TimeGrant grant) {
-    grants.add(grant);
-}
-
-public ArrayList<TimeGrant> getGrants() {
-    return grants;
-}
-
-public void addTimeGrantLog(String logEntry) {
-    timeGrantLogs.add(logEntry);
-}
-}
-
-
