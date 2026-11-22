@@ -1,86 +1,196 @@
-package ui;
+package gpu.ui;
 
 import java.awt.*;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.*;
-import logic.Scheduler;
-import model.AppState;
-import model.ProjectException;
-import storage.DataStore;
+import javax.swing.table.DefaultTableModel;
+import gpu.logic.AccountService;
+import gpu.logic.Scheduler;
+import gpu.logic.SimulationClock;
+import gpu.model.*;
+import gpu.storage.DataStore;
 
-public class ClockSetupDialog extends JDialog {
-    private boolean confirmed = false;
+public class AdminFrame extends JFrame {
+    private final AppState state;
+    private final AccountService accountService;
+    private final Scheduler scheduler;
+    private final DataStore dataStore;
 
-    public ClockSetupDialog(Frame owner, AppState state, Scheduler scheduler, DataStore dataStore) {
-        super(owner, "Start the simulation", true);
-        setSize(440, 230);
-        setLocationRelativeTo(owner);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+    private JLabel clockLbl;
+    private JButton advanceBtn;
+    private JTabbedPane tabs;
+    private DashboardPanel dashboardPanel;
+    private RequestsPanel requestsPanel;
+    private StudentsPanel studentsPanel;
 
-        JPanel root = new JPanel(new BorderLayout(12, 12));
-        root.setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+    private JTextField allJobsSearchField;
+    private JComboBox<String> allJobsStatusFilter;
+    private DefaultTableModel allJobsModel;
 
-        JPanel header = new JPanel(new GridLayout(2, 1, 4, 4));
-        JLabel title = new JLabel("Set the starting date and time");
-        title.setFont(new Font("SansSerif", Font.BOLD, 16));
-        JLabel subtitle = new JLabel("This is done once. Afterwards, time moves only with +1 minute.");
-        subtitle.setForeground(Color.DARK_GRAY);
-        header.add(title);
-        header.add(subtitle);
-        root.add(header, BorderLayout.NORTH);
+    public AdminFrame(AppState state, AccountService accountService, Scheduler scheduler, DataStore dataStore) {
+        super("GPU Utilization Management — Administrator");
+        this.state = state;
+        this.accountService = accountService;
+        this.scheduler = scheduler;
+        this.dataStore = dataStore;
 
-        JPanel center = new JPanel(new GridLayout(2, 2, 12, 6));
-        center.add(new JLabel("Date (dd/MM/yyyy)"));
-        center.add(new JLabel("Time (24-hour HH:mm)"));
+        setSize(1100, 760);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        Calendar defaultCal = Calendar.getInstance();
-        defaultCal.set(2026, Calendar.NOVEMBER, 16, 10, 0, 0);
-        Date initialDate = defaultCal.getTime();
-
-        JSpinner dateSpinner = new JSpinner(new SpinnerDateModel(initialDate, null, null, Calendar.DAY_OF_MONTH));
-        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "dd/MM/yyyy"));
-
-        JSpinner timeSpinner = new JSpinner(new SpinnerDateModel(initialDate, null, null, Calendar.MINUTE));
-        timeSpinner.setEditor(new JSpinner.DateEditor(timeSpinner, "HH:mm"));
-
-        center.add(dateSpinner);
-        center.add(timeSpinner);
-        root.add(center, BorderLayout.CENTER);
-
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton startBtn = new JButton("Start clock");
-        startBtn.addActionListener(e -> {
-            try {
-                Date d = (Date) dateSpinner.getValue();
-                Date t = (Date) timeSpinner.getValue();
-                String[] dParts = new SimpleDateFormat("dd/MM/yyyy").format(d).split("/");
-                String[] tParts = new SimpleDateFormat("HH:mm").format(t).split(":");
-
-                int day = Integer.parseInt(dParts[0]);
-                int month = Integer.parseInt(dParts[1]);
-                int year = Integer.parseInt(dParts[2]);
-                int hour = Integer.parseInt(tParts[0]);
-                int minute = Integer.parseInt(tParts[1]);
-
-                scheduler.initializeClock(state.getAdministrator(), day, month, year, hour, minute);
-                dataStore.saveAll(state);
-                confirmed = true;
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    dataStore.saveAll(state);
+                } catch (ProjectException ex) {
+                    JOptionPane.showMessageDialog(AdminFrame.this, ex.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);
+                }
                 dispose();
-            } catch (ProjectException ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Clock Setup Error", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Invalid date or time selected.", "Clock Setup Error", JOptionPane.ERROR_MESSAGE);
+                System.exit(0);
             }
         });
-        bottom.add(startBtn);
-        root.add(bottom, BorderLayout.SOUTH);
 
-        setContentPane(root);
+        setLayout(new BorderLayout());
+
+        JPanel topBar = new JPanel(new BorderLayout(10, 10));
+
+
+        JLabel titleLbl = new JLabel("GPU Utilization Dashboard — Administrator");
+        titleLbl.setFont(new Font("SansSerif", Font.BOLD, 18));
+        topBar.add(titleLbl, BorderLayout.WEST);
+
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        clockLbl = new JLabel("Simulated time: Not set");
+        clockLbl.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        advanceBtn = new JButton("+1 minute");
+        advanceBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleAdvanceMinute(); } });
+
+        JButton logoutBtn = new JButton("Log out");
+        logoutBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleLogout(); } });
+
+        rightControls.add(clockLbl);
+        rightControls.add(advanceBtn);
+        rightControls.add(logoutBtn);
+        topBar.add(rightControls, BorderLayout.EAST);
+
+        add(topBar, BorderLayout.NORTH);
+
+        tabs = new JTabbedPane();
+        dashboardPanel = new DashboardPanel(state, scheduler);
+        requestsPanel = new RequestsPanel(state, accountService, dataStore, new Runnable() { public void run() { refreshAll(); } });
+        studentsPanel = new StudentsPanel(state, accountService, scheduler, dataStore, new Runnable() { public void run() { refreshAll(); } });
+        JPanel allJobsPanel = buildAllJobsPanel();
+
+        tabs.addTab("Dashboard", dashboardPanel);
+        tabs.addTab("Requests", requestsPanel);
+        tabs.addTab("Students", studentsPanel);
+        tabs.addTab("All Jobs", allJobsPanel);
+
+        add(tabs, BorderLayout.CENTER);
+
+        if (!state.getClock().isSet()) {
+            ClockSetupDialog dialog = new ClockSetupDialog(this, state, scheduler, dataStore);
+            dialog.setVisible(true);
+        }
+
+        refreshAll();
     }
 
-    public boolean isConfirmed() {
-        return confirmed;
+    private JPanel buildAllJobsPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+
+
+        JPanel filterBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        filterBar.add(new JLabel("Search (Job ID, Student ID, Title):"));
+        allJobsSearchField = new JTextField(18);
+        allJobsStatusFilter = new JComboBox<>(new String[]{"All", Job.QUEUED, Job.RUNNING, Job.COMPLETED, Job.CANCELLED});
+        JButton applyBtn = new JButton("Filter");
+        applyBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { refreshAllJobsTable(); } });
+        allJobsStatusFilter.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { refreshAllJobsTable(); } });
+
+        filterBar.add(allJobsSearchField);
+        filterBar.add(new JLabel("Status:"));
+        filterBar.add(allJobsStatusFilter);
+        filterBar.add(applyBtn);
+        panel.add(filterBar, BorderLayout.NORTH);
+
+        allJobsModel = new DefaultTableModel(
+            new String[]{"Job ID", "Student", "Title", "App", "Size", "Status", "GPU", "Submitted", "Start", "Finish", "Charged", "Cancel Reason"}, 0
+        ) {
+            public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable table = new JTable(allJobsModel);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void refreshAllJobsTable() {
+        allJobsModel.setRowCount(0);
+        String query = allJobsSearchField.getText().trim().toLowerCase();
+        String statusFilter = (String) allJobsStatusFilter.getSelectedItem();
+
+        for (Job j : state.getJobs()) {
+            if (!"All".equals(statusFilter) && !j.getStatus().equals(statusFilter)) {
+                continue;
+            }
+            if (!query.isEmpty()) {
+                boolean match = j.getId().toLowerCase().contains(query)
+                             || j.getStudentId().toLowerCase().contains(query)
+                             || j.getTitle().toLowerCase().contains(query);
+                if (!match) { continue; }
+            }
+            String gpuStr = j.getGpuId() > 0 ? "GPU" + j.getGpuId() : "-";
+            String chargeStr = j.isActive() ? "-" : String.valueOf(j.getCharge());
+            String reason = j.getCancellationReason() == null ? "" : j.getCancellationReason();
+            allJobsModel.addRow(new Object[]{
+                j.getId(), j.getStudentId(), j.getTitle(), j.getApplication(),
+                j.getTaskSize() + " (" + j.getDuration() + ")",
+                j.getStatus(), gpuStr,
+                SimulationClock.format(j.getSubmissionTime()),
+                SimulationClock.format(j.getStartTime()),
+                SimulationClock.format(j.getFinishTime()),
+                chargeStr, reason
+            });
+        }
+    }
+
+    private void handleAdvanceMinute() {
+        try {
+            scheduler.advanceMinute(state.getAdministrator());
+            dataStore.saveAll(state);
+            refreshAll();
+        } catch (ProjectException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Clock Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleLogout() {
+        try {
+            dataStore.saveAll(state);
+        } catch (ProjectException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Save Error", JOptionPane.ERROR_MESSAGE);
+        }
+        dispose();
+        new LoginFrame(state, accountService, scheduler, dataStore).setVisible(true);
+    }
+
+    public void refreshAll() {
+        boolean clockSet = state.getClock().isSet();
+        clockLbl.setText("Simulated time: " + (clockSet ? SimulationClock.format(state.getClock().getNow()) : "Not set"));
+        advanceBtn.setEnabled(clockSet);
+
+        int pendingCount = 0;
+        for (AccessRequest r : state.getRequests()) {
+            if ("Pending".equalsIgnoreCase(r.getStatus())) { pendingCount++; }
+        }
+        tabs.setTitleAt(1, "Requests (" + pendingCount + ")");
+
+        dashboardPanel.refresh();
+        requestsPanel.refresh();
+        studentsPanel.refresh();
+        refreshAllJobsTable();
     }
 }
