@@ -216,7 +216,7 @@ public class StudentsPanel extends JPanel {
             }
 
             String reason = JOptionPane.showInputDialog(this, chargeNote + "\n\nEnter cancellation reason (required):", "Cancel Job " + jobId, JOptionPane.WARNING_MESSAGE);
-            if (reason == null) { return; } 
+            if (reason == null) { return; } // user pressed Cancel
             if (reason.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Cancellation reason cannot be blank.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
