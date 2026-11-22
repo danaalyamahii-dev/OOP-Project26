@@ -29,7 +29,6 @@ public class RequestsPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
-        // Top filter bar
         JPanel top = new JPanel(new BorderLayout());
         JLabel title = new JLabel("Registration Requests");
         title.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -43,7 +42,6 @@ public class RequestsPanel extends JPanel {
         top.add(filterPanel, BorderLayout.EAST);
         add(top, BorderLayout.NORTH);
 
-        // Requests table
         tableModel = new DefaultTableModel(
             new String[]{"University ID", "Name", "Email", "Phone", "Password", "Status"}, 0
         ) {
@@ -58,7 +56,6 @@ public class RequestsPanel extends JPanel {
         });
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // Bottom action panel
         JPanel bottom = new JPanel(new BorderLayout(10, 8));
         bottom.setBorder(BorderFactory.createTitledBorder("Review Selected Request"));
 
