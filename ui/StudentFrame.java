@@ -39,7 +39,7 @@ public class StudentFrame extends JFrame {
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
         JPanel root = new JPanel(new BorderLayout(12, 12));
-
+        root.setBorder(BorderFactory.createEmptyBorder(16, 22, 16, 22));
         JPanel header = new JPanel(new BorderLayout(10, 8));
         JPanel heading = new JPanel(new GridLayout(2, 1));
         JLabel welcome = new JLabel("Welcome, " + student.getName());
