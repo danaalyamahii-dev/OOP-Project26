@@ -55,7 +55,7 @@ public class AdminFrame extends JFrame {
         setLayout(new BorderLayout());
 
         JPanel topBar = new JPanel(new BorderLayout(10, 10));
-
+        topBar.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
 
         JLabel titleLbl = new JLabel("GPU Utilization Dashboard — Administrator");
         titleLbl.setFont(new Font("SansSerif", Font.BOLD, 18));
@@ -101,7 +101,7 @@ public class AdminFrame extends JFrame {
 
     private JPanel buildAllJobsPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
         JPanel filterBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
         filterBar.add(new JLabel("Search (Job ID, Student ID, Title):"));
