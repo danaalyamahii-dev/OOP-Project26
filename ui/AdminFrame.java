@@ -1,15 +1,15 @@
-package ui;
+package gpu.ui;
 
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import logic.AccountService;
-import logic.Scheduler;
-import logic.SimulationClock;
-import model.*;
-import storage.DataStore;
+import gpu.logic.AccountService;
+import gpu.logic.Scheduler;
+import gpu.logic.SimulationClock;
+import gpu.model.*;
+import gpu.storage.DataStore;
 
 public class AdminFrame extends JFrame {
     private final AppState state;
@@ -24,7 +24,6 @@ public class AdminFrame extends JFrame {
     private RequestsPanel requestsPanel;
     private StudentsPanel studentsPanel;
 
-    // All Jobs tab components
     private JTextField allJobsSearchField;
     private JComboBox<String> allJobsStatusFilter;
     private DefaultTableModel allJobsModel;
@@ -40,7 +39,6 @@ public class AdminFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        // Auto-save when closing the window
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -56,9 +54,8 @@ public class AdminFrame extends JFrame {
 
         setLayout(new BorderLayout());
 
-        // Top Bar: Title + Simulated Clock + (+1 minute) + Log out
         JPanel topBar = new JPanel(new BorderLayout(10, 10));
-        topBar.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+
 
         JLabel titleLbl = new JLabel("GPU Utilization Dashboard — Administrator");
         titleLbl.setFont(new Font("SansSerif", Font.BOLD, 18));
@@ -69,10 +66,10 @@ public class AdminFrame extends JFrame {
         clockLbl.setFont(new Font("SansSerif", Font.BOLD, 14));
 
         advanceBtn = new JButton("+1 minute");
-        advanceBtn.addActionListener(e -> handleAdvanceMinute());
+        advanceBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleAdvanceMinute(); } });
 
         JButton logoutBtn = new JButton("Log out");
-        logoutBtn.addActionListener(e -> handleLogout());
+        logoutBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleLogout(); } });
 
         rightControls.add(clockLbl);
         rightControls.add(advanceBtn);
@@ -81,11 +78,10 @@ public class AdminFrame extends JFrame {
 
         add(topBar, BorderLayout.NORTH);
 
-        // Tabs
         tabs = new JTabbedPane();
         dashboardPanel = new DashboardPanel(state, scheduler);
-        requestsPanel = new RequestsPanel(state, accountService, dataStore, this::refreshAll);
-        studentsPanel = new StudentsPanel(state, accountService, scheduler, dataStore, this::refreshAll);
+        requestsPanel = new RequestsPanel(state, accountService, dataStore, new Runnable() { public void run() { refreshAll(); } });
+        studentsPanel = new StudentsPanel(state, accountService, scheduler, dataStore, new Runnable() { public void run() { refreshAll(); } });
         JPanel allJobsPanel = buildAllJobsPanel();
 
         tabs.addTab("Dashboard", dashboardPanel);
@@ -95,7 +91,6 @@ public class AdminFrame extends JFrame {
 
         add(tabs, BorderLayout.CENTER);
 
-        // First-run clock setup if not initialized yet
         if (!state.getClock().isSet()) {
             ClockSetupDialog dialog = new ClockSetupDialog(this, state, scheduler, dataStore);
             dialog.setVisible(true);
@@ -106,15 +101,15 @@ public class AdminFrame extends JFrame {
 
     private JPanel buildAllJobsPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+
 
         JPanel filterBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
         filterBar.add(new JLabel("Search (Job ID, Student ID, Title):"));
         allJobsSearchField = new JTextField(18);
         allJobsStatusFilter = new JComboBox<>(new String[]{"All", Job.QUEUED, Job.RUNNING, Job.COMPLETED, Job.CANCELLED});
         JButton applyBtn = new JButton("Filter");
-        applyBtn.addActionListener(e -> refreshAllJobsTable());
-        allJobsStatusFilter.addActionListener(e -> refreshAllJobsTable());
+        applyBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { refreshAllJobsTable(); } });
+        allJobsStatusFilter.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { refreshAllJobsTable(); } });
 
         filterBar.add(allJobsSearchField);
         filterBar.add(new JLabel("Status:"));
