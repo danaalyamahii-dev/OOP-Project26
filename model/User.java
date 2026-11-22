@@ -1,0 +1,23 @@
+package gpu.model;
+
+public abstract class User {
+    private String username;
+    private String name;
+    private String password;
+
+    public User(String username, String name, String password) {
+        this.username = username;
+        this.name = name;
+        this.password = password;
+    }
+
+    public String getUsername() { return username; }
+    public String getName() { return name; }
+    public String getPassword() { return password; }
+
+    public boolean checkPassword(String enteredPassword) {
+        return password.equals(enteredPassword);
+    }
+
+    public abstract String getRole();
+}
