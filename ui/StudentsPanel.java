@@ -1,13 +1,13 @@
-package ui;
+package gpu.ui;
 
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import logic.AccountService;
-import logic.Scheduler;
-import logic.SimulationClock;
-import model.*;
-import storage.DataStore;
+import gpu.logic.AccountService;
+import gpu.logic.Scheduler;
+import gpu.logic.SimulationClock;
+import gpu.model.*;
+import gpu.storage.DataStore;
 
 public class StudentsPanel extends JPanel {
     private final AppState state;
@@ -34,13 +34,12 @@ public class StudentsPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
-        // 1. Search Bar
         JPanel top = new JPanel(new BorderLayout(8, 8));
         JPanel searchBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         searchBar.add(new JLabel("University ID:"));
         searchField = new JTextField(16);
         JButton searchBtn = new JButton("Search");
-        searchBtn.addActionListener(e -> searchStudent());
+        searchBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { searchStudent(); } });
         searchBar.add(searchField);
         searchBar.add(searchBtn);
         top.add(searchBar, BorderLayout.NORTH);
@@ -49,7 +48,6 @@ public class StudentsPanel extends JPanel {
         studentInfoLbl.setFont(new Font("SansSerif", Font.BOLD, 14));
         top.add(studentInfoLbl, BorderLayout.CENTER);
 
-        // Balance Cards
         JPanel balancePanel = new JPanel(new GridLayout(1, 4, 8, 8));
         allocLbl = createCard(balancePanel, "Allocated");
         usedLbl = createCard(balancePanel, "Used");
@@ -59,7 +57,6 @@ public class StudentsPanel extends JPanel {
 
         add(top, BorderLayout.NORTH);
 
-        // 2. Center: Grant Extra Time + Student Jobs Table
         JPanel center = new JPanel(new BorderLayout(10, 10));
 
         JPanel grantPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
@@ -72,7 +69,7 @@ public class StudentsPanel extends JPanel {
         grantPanel.add(grantReasonField);
         grantBtn = new JButton("Grant");
         grantBtn.setEnabled(false);
-        grantBtn.addActionListener(e -> handleGrant());
+        grantBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleGrant(); } });
         grantPanel.add(grantBtn);
         center.add(grantPanel, BorderLayout.NORTH);
 
@@ -90,7 +87,7 @@ public class StudentsPanel extends JPanel {
         JPanel bottomActions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         cancelJobBtn = new JButton("Cancel Selected Job...");
         cancelJobBtn.setEnabled(false);
-        cancelJobBtn.addActionListener(e -> handleCancelJob());
+        cancelJobBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleCancelJob(); } });
         bottomActions.add(cancelJobBtn);
         center.add(bottomActions, BorderLayout.SOUTH);
 
@@ -185,8 +182,6 @@ public class StudentsPanel extends JPanel {
 
         try {
             accountService.grantTime(state.getAdministrator(), currentStudent.getUsername(), minutes, reason);
-            String timestamp = SimulationClock.format(state.getClock().getNow());
-            state.addTimeGrantLog(timestamp + " | admin -> " + currentStudent.getUsername() + " | +" + minutes + " min | " + reason);
             dataStore.saveAll(state);
             grantMinutesField.setText("");
             grantReasonField.setText("");
@@ -221,7 +216,7 @@ public class StudentsPanel extends JPanel {
             }
 
             String reason = JOptionPane.showInputDialog(this, chargeNote + "\n\nEnter cancellation reason (required):", "Cancel Job " + jobId, JOptionPane.WARNING_MESSAGE);
-            if (reason == null) { return; } // user pressed Cancel
+            if (reason == null) { return; } 
             if (reason.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Cancellation reason cannot be blank.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
