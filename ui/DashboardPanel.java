@@ -1,13 +1,13 @@
-package ui;
+package gpu.ui;
 
 import java.awt.*;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import logic.Prediction;
-import logic.Scheduler;
-import logic.SimulationClock;
-import model.*;
+import gpu.logic.Prediction;
+import gpu.logic.Scheduler;
+import gpu.logic.SimulationClock;
+import gpu.model.*;
 
 public class DashboardPanel extends JPanel {
     private final AppState state;
@@ -28,9 +28,9 @@ public class DashboardPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 
         JPanel content = new JPanel();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setLayout(new BorderLayout(8, 8));
+        JPanel topSections = new JPanel(new GridLayout(2, 1, 8, 8));
 
-        // 1. Summary Row
         JPanel summaryPanel = new JPanel(new GridLayout(1, 6, 8, 8));
         summaryPanel.setBorder(BorderFactory.createTitledBorder("System Summary"));
         runningCountLbl = createMetricCard(summaryPanel, "Running");
@@ -39,10 +39,8 @@ public class DashboardPanel extends JPanel {
         cancelledCountLbl = createMetricCard(summaryPanel, "Cancelled");
         busyGpuLbl = createMetricCard(summaryPanel, "Busy GPUs");
         utilizationLbl = createMetricCard(summaryPanel, "Utilization");
-        content.add(summaryPanel);
-        content.add(Box.createVerticalStrut(10));
+        topSections.add(summaryPanel);
 
-        // 2. GPU Status Row (GPU1 - GPU4)
         JPanel gpusPanel = new JPanel(new GridLayout(1, 4, 8, 8));
         gpusPanel.setBorder(BorderFactory.createTitledBorder("GPU Status (4 x NVIDIA H100)"));
         for (int i = 0; i < 4; i++) {
@@ -62,10 +60,9 @@ public class DashboardPanel extends JPanel {
             card.add(gpuFinLbls[i]);
             gpusPanel.add(card);
         }
-        content.add(gpusPanel);
-        content.add(Box.createVerticalStrut(10));
+        topSections.add(gpusPanel);
+        content.add(topSections, BorderLayout.NORTH);
 
-        // 3. Waiting Jobs Table
         waitingModel = new DefaultTableModel(
             new String[]{"Job", "Student", "Application", "Dur.", "Pos.", "Pred. Start", "Pred. Finish", "Wait"}, 0
         ) {
@@ -75,10 +72,8 @@ public class DashboardPanel extends JPanel {
         JScrollPane waitingScroll = new JScrollPane(waitingTable);
         waitingScroll.setPreferredSize(new Dimension(800, 130));
         waitingScroll.setBorder(BorderFactory.createTitledBorder("Waiting Jobs (FCFS Queue)"));
-        content.add(waitingScroll);
-        content.add(Box.createVerticalStrut(10));
+        content.add(waitingScroll, BorderLayout.CENTER);
 
-        // 4. Bottom Split: Completed Jobs + Student Allowances
         JPanel bottomSplit = new JPanel(new GridLayout(1, 2, 10, 10));
 
         completedModel = new DefaultTableModel(
@@ -103,7 +98,7 @@ public class DashboardPanel extends JPanel {
 
         bottomSplit.add(completedScroll);
         bottomSplit.add(allowanceScroll);
-        content.add(bottomSplit);
+        content.add(bottomSplit, BorderLayout.SOUTH);
 
         add(new JScrollPane(content), BorderLayout.CENTER);
         refresh();
@@ -142,7 +137,7 @@ public class DashboardPanel extends JPanel {
             GPU gpu = state.getGpu(i + 1);
             if (gpu.isFree()) {
                 gpuStatusLbls[i].setText("GPU" + (i + 1) + " — Free");
-                gpuStatusLbls[i].setForeground(new Color(0, 128, 0));
+                gpuStatusLbls[i].setForeground(Color.GREEN.darker());
                 gpuJobLbls[i].setText("Current job: -");
                 gpuRemLbls[i].setText("Remaining: -");
                 gpuFinLbls[i].setText("Finishes: -");
@@ -151,7 +146,7 @@ public class DashboardPanel extends JPanel {
                 Job cur = gpu.getCurrentJob();
                 long rem = cur.getExpectedFinish() - now;
                 gpuStatusLbls[i].setText("GPU" + (i + 1) + " — Busy");
-                gpuStatusLbls[i].setForeground(new Color(180, 0, 0));
+                gpuStatusLbls[i].setForeground(Color.RED.darker());
                 gpuJobLbls[i].setText("Current job: " + cur.getId() + " (" + cur.getStudentId() + ")");
                 gpuRemLbls[i].setText("Remaining: " + rem + " min");
                 gpuFinLbls[i].setText("Finishes: " + SimulationClock.format(cur.getExpectedFinish()));
@@ -171,7 +166,6 @@ public class DashboardPanel extends JPanel {
             utilizationLbl.setText(String.format("%.1f%%", util));
         }
 
-        // Refresh Waiting Jobs
         waitingModel.setRowCount(0);
         ArrayList<Prediction> preds = scheduler.predictions();
         for (Job j : scheduler.getQueue()) {
@@ -188,7 +182,6 @@ public class DashboardPanel extends JPanel {
             });
         }
 
-        // Refresh Completed Jobs
         completedModel.setRowCount(0);
         for (Job j : state.getJobs()) {
             if (Job.COMPLETED.equals(j.getStatus())) {
@@ -206,7 +199,6 @@ public class DashboardPanel extends JPanel {
             }
         }
 
-        // Refresh Student Allowances
         allowanceModel.setRowCount(0);
         for (Student s : state.getStudents()) {
             TimeAllowance a = s.getAllowance();
