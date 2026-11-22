@@ -39,7 +39,7 @@ public class LoginFrame extends JFrame {
         form.add(password);
         JButton sign = new JButton("Sign in");
         sign.setBackground(Color.BLUE);
-        sign.setForeground(Color.WHITE);
+        sign.setForeground(Color.BLACK);
         sign.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) { signIn(); }
         });
@@ -67,7 +67,6 @@ public class LoginFrame extends JFrame {
         bottom.add(exit);
         root.add(bottom, BorderLayout.SOUTH);
 
-        // Keep the form compact instead of stretching it across the window.
         JPanel outside = new JPanel(new BorderLayout());
         outside.add(root, BorderLayout.CENTER);
         JPanel left = new JPanel();
