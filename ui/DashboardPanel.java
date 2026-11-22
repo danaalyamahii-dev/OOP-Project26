@@ -28,8 +28,7 @@ public class DashboardPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 
         JPanel content = new JPanel();
-        content.setLayout(new BorderLayout(8, 8));
-        JPanel topSections = new JPanel(new GridLayout(2, 1, 8, 8));
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
         JPanel summaryPanel = new JPanel(new GridLayout(1, 6, 8, 8));
         summaryPanel.setBorder(BorderFactory.createTitledBorder("System Summary"));
@@ -39,7 +38,8 @@ public class DashboardPanel extends JPanel {
         cancelledCountLbl = createMetricCard(summaryPanel, "Cancelled");
         busyGpuLbl = createMetricCard(summaryPanel, "Busy GPUs");
         utilizationLbl = createMetricCard(summaryPanel, "Utilization");
-        topSections.add(summaryPanel);
+        content.add(summaryPanel);
+        content.add(Box.createVerticalStrut(10));
 
         JPanel gpusPanel = new JPanel(new GridLayout(1, 4, 8, 8));
         gpusPanel.setBorder(BorderFactory.createTitledBorder("GPU Status (4 x NVIDIA H100)"));
@@ -60,8 +60,8 @@ public class DashboardPanel extends JPanel {
             card.add(gpuFinLbls[i]);
             gpusPanel.add(card);
         }
-        topSections.add(gpusPanel);
-        content.add(topSections, BorderLayout.NORTH);
+        content.add(gpusPanel);
+        content.add(Box.createVerticalStrut(10));
 
         waitingModel = new DefaultTableModel(
             new String[]{"Job", "Student", "Application", "Dur.", "Pos.", "Pred. Start", "Pred. Finish", "Wait"}, 0
@@ -72,7 +72,8 @@ public class DashboardPanel extends JPanel {
         JScrollPane waitingScroll = new JScrollPane(waitingTable);
         waitingScroll.setPreferredSize(new Dimension(800, 130));
         waitingScroll.setBorder(BorderFactory.createTitledBorder("Waiting Jobs (FCFS Queue)"));
-        content.add(waitingScroll, BorderLayout.CENTER);
+        content.add(waitingScroll);
+        content.add(Box.createVerticalStrut(10));
 
         JPanel bottomSplit = new JPanel(new GridLayout(1, 2, 10, 10));
 
@@ -98,7 +99,7 @@ public class DashboardPanel extends JPanel {
 
         bottomSplit.add(completedScroll);
         bottomSplit.add(allowanceScroll);
-        content.add(bottomSplit, BorderLayout.SOUTH);
+        content.add(bottomSplit);
 
         add(new JScrollPane(content), BorderLayout.CENTER);
         refresh();
