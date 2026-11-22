@@ -1,10 +1,10 @@
-package storage;
+package gpu.storage;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import logic.SimulationClock;
-import model.*;
+import java.util.Scanner;
+
+import gpu.logic.SimulationClock;
+import gpu.model.*;
 
 public class DataStore {
     private final String dataDir;
@@ -46,18 +46,24 @@ public class DataStore {
 
     private void saveClock(AppState state) throws ProjectException {
         File file = new File(dataDir, "clock.csv");
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter(file);
             out.println("initial,now,nextJobNumber");
             SimulationClock clock = state.getClock();
             out.println(clock.getInitial() + "," + clock.getNow() + "," + state.getNextJobNumber());
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
+        } finally {
+            if (out != null) { out.close(); }
         }
     }
 
     private void saveStudents(AppState state) throws ProjectException {
         File file = new File(dataDir, "students.csv");
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter(file);
             out.println("username,password,name,email,phone,allocated,used,reserved");
             for (Student s : state.getStudents()) {
                 TimeAllowance a = s.getAllowance();
@@ -72,12 +78,16 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
+        } finally {
+            if (out != null) { out.close(); }
         }
     }
 
     private void saveRequests(AppState state) throws ProjectException {
         File file = new File(dataDir, "requests.csv");
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter(file);
             out.println("id,name,email,phone,password,status");
             for (AccessRequest r : state.getRequests()) {
                 out.println(escape(r.getId()) + "," +
@@ -89,12 +99,16 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
+        } finally {
+            if (out != null) { out.close(); }
         }
     }
 
     private void saveJobs(AppState state) throws ProjectException {
         File file = new File(dataDir, "jobs.csv");
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter(file);
             out.println("number,studentId,title,application,description,duration,submissionTime,status,gpuId,startTime,finishTime,cancellationTime,cancelledBy,cancellationReason");
             for (Job j : state.getJobs()) {
                 out.println(j.getNumber() + "," +
@@ -114,18 +128,25 @@ public class DataStore {
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
+        } finally {
+            if (out != null) { out.close(); }
         }
     }
 
     private void saveGrants(AppState state) throws ProjectException {
         File file = new File(dataDir, "grants.csv");
-        try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter(file);
             out.println("entry");
-            for (String log : state.getTimeGrantLogs()) {
-                out.println(escape(log));
+            for (TimeGrant grant : state.getGrants()) {
+                out.println(escape(grant.getStudentId()) + "," + grant.getMinutes() + "," +
+                    escape(grant.getAdministrator()) + "," + escape(grant.getReason()) + "," + grant.getTime());
             }
         } catch (IOException e) {
             throw new ProjectException("Could not write " + file.getPath() + ": " + e.getMessage());
+        } finally {
+            if (out != null) { out.close(); }
         }
     }
 
@@ -146,11 +167,14 @@ public class DataStore {
     private void loadClock(AppState state) throws ProjectException {
         File file = new File(dataDir, "clock.csv");
         if (!file.exists()) { return; }
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            String header = br.readLine();
-            if (header == null) { return; }
-            String line = br.readLine();
-            if (line == null || line.trim().isEmpty()) { return; }
+        Scanner br = null;
+        try {
+            br = new Scanner(file);
+            if (!br.hasNextLine()) { return; }
+            br.nextLine();
+            if (!br.hasNextLine()) { return; }
+            String line = br.nextLine();
+            if (line.trim().isEmpty()) { return; }
             String[] parts = line.split(",", -1);
             if (parts.length < 3) {
                 throw new ProjectException("Could not read " + file.getPath() + " (line 2: expected 3 columns).");
@@ -164,17 +188,22 @@ public class DataStore {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (line 2: " + e.getMessage() + ").");
+        } finally {
+            if (br != null) { br.close(); }
         }
     }
 
     private void loadStudents(AppState state) throws ProjectException {
         File file = new File(dataDir, "students.csv");
         if (!file.exists()) { return; }
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            br.readLine();
+        Scanner br = null;
+        try {
+            br = new Scanner(file);
+            if (br.hasNextLine()) { br.nextLine(); }
             String line;
             int lineNum = 1;
-            while ((line = br.readLine()) != null) {
+            while (br.hasNextLine()) {
+                line = br.nextLine();
                 lineNum++;
                 if (line.trim().isEmpty()) { continue; }
                 String[] p = line.split(",", -1);
@@ -193,23 +222,28 @@ public class DataStore {
                     throw new ProjectException("Could not read " + file.getPath() + " (line " + lineNum + ": negative balance).");
                 }
                 TimeAllowance allowance = new TimeAllowance(allocated, used, reserved);
-                state.addStudent(new Student(username, password, name, email, phone, allowance));
+                state.addStudent(new Student(username, name, email, phone, password, allowance));
             }
         } catch (ProjectException e) {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
+        } finally {
+            if (br != null) { br.close(); }
         }
     }
 
     private void loadRequests(AppState state) throws ProjectException {
         File file = new File(dataDir, "requests.csv");
         if (!file.exists()) { return; }
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            br.readLine();
+        Scanner br = null;
+        try {
+            br = new Scanner(file);
+            if (br.hasNextLine()) { br.nextLine(); }
             String line;
             int lineNum = 1;
-            while ((line = br.readLine()) != null) {
+            while (br.hasNextLine()) {
+                line = br.nextLine();
                 lineNum++;
                 if (line.trim().isEmpty()) { continue; }
                 String[] p = line.split(",", -1);
@@ -230,18 +264,23 @@ public class DataStore {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
+        } finally {
+            if (br != null) { br.close(); }
         }
     }
 
     private void loadJobs(AppState state) throws ProjectException {
         File file = new File(dataDir, "jobs.csv");
         if (!file.exists()) { return; }
-        HashMap<Integer, Job> runningOnGpu = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            br.readLine();
+        Job[] runningOnGpu = new Job[4];
+        Scanner br = null;
+        try {
+            br = new Scanner(file);
+            if (br.hasNextLine()) { br.nextLine(); }
             String line;
             int lineNum = 1;
-            while ((line = br.readLine()) != null) {
+            while (br.hasNextLine()) {
+                line = br.nextLine();
                 lineNum++;
                 if (line.trim().isEmpty()) { continue; }
                 String[] p = line.split(",", -1);
@@ -273,35 +312,48 @@ public class DataStore {
                 state.addJob(job);
 
                 if (Job.RUNNING.equals(status)) {
-                    if (gpuId < 1 || gpuId > 4 || runningOnGpu.containsKey(gpuId)) {
+                    if (gpuId < 1 || gpuId > 4 || runningOnGpu[gpuId - 1] != null) {
                         throw new ProjectException("Could not read " + file.getPath() + " (line " + lineNum + ": invalid or duplicate GPU assignment).");
                     }
-                    runningOnGpu.put(gpuId, job);
+                    runningOnGpu[gpuId - 1] = job;
                 }
             }
-            for (Integer gpuId : runningOnGpu.keySet()) {
-                state.getGpu(gpuId).assign(runningOnGpu.get(gpuId));
+            for (int gpuId = 1; gpuId <= 4; gpuId++) {
+                if (runningOnGpu[gpuId - 1] != null) {
+                    state.getGpu(gpuId).assign(runningOnGpu[gpuId - 1]);
+                }
             }
         } catch (ProjectException e) {
             throw e;
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
+        } finally {
+            if (br != null) { br.close(); }
         }
     }
 
     private void loadGrants(AppState state) throws ProjectException {
         File file = new File(dataDir, "grants.csv");
         if (!file.exists()) { return; }
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            br.readLine();
+        Scanner br = null;
+        try {
+            br = new Scanner(file);
+            if (br.hasNextLine()) { br.nextLine(); }
             String line;
-            while ((line = br.readLine()) != null) {
+            while (br.hasNextLine()) {
+                line = br.nextLine();
                 if (!line.trim().isEmpty()) {
-                    state.addTimeGrantLog(unescape(line.trim()));
+                    String[] parts = line.split(",", -1);
+                    if (parts.length == 5) {
+                        state.addGrant(new TimeGrant(unescape(parts[0]), Integer.parseInt(parts[1]),
+                            unescape(parts[2]), unescape(parts[3]), Long.parseLong(parts[4])));
+                    }
                 }
             }
         } catch (Exception e) {
             throw new ProjectException("Could not read " + file.getPath() + " (" + e.getMessage() + ").");
+        } finally {
+            if (br != null) { br.close(); }
         }
     }
 }
