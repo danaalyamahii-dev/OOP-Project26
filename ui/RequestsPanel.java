@@ -1,11 +1,11 @@
-package ui;
+package gpu.ui;
 
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import logic.AccountService;
-import model.*;
-import storage.DataStore;
+import gpu.logic.AccountService;
+import gpu.model.*;
+import gpu.storage.DataStore;
 
 public class RequestsPanel extends JPanel {
     private final AppState state;
@@ -38,7 +38,7 @@ public class RequestsPanel extends JPanel {
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         filterPanel.add(new JLabel("Show:"));
         filterBox = new JComboBox<>(new String[]{"Pending", "Approved", "Rejected", "All"});
-        filterBox.addActionListener(e -> refresh());
+        filterBox.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { refresh(); } });
         filterPanel.add(filterBox);
         top.add(filterPanel, BorderLayout.EAST);
         add(top, BorderLayout.NORTH);
@@ -51,8 +51,10 @@ public class RequestsPanel extends JPanel {
         };
         table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) { updateSelectionControls(); }
+        table.getSelectionModel().addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+            public void valueChanged(javax.swing.event.ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) { updateSelectionControls(); }
+            }
         });
         add(new JScrollPane(table), BorderLayout.CENTER);
 
@@ -74,8 +76,8 @@ public class RequestsPanel extends JPanel {
         approveBtn.setEnabled(false);
         rejectBtn.setEnabled(false);
 
-        approveBtn.addActionListener(e -> handleApprove());
-        rejectBtn.addActionListener(e -> handleReject());
+        approveBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleApprove(); } });
+        rejectBtn.addActionListener(new java.awt.event.ActionListener() { public void actionPerformed(java.awt.event.ActionEvent e) { handleReject(); } });
 
         controls.add(approveBtn);
         controls.add(rejectBtn);
